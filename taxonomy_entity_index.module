@@ -95,25 +95,33 @@ function taxonomy_entity_index_field_attach_update($entity_type, $entity) {
     return;
   }
 
-  $tids = array();
+  $terms = array();
   foreach ($taxonomy_fields as $field_name) {
     if ($items = field_get_items($entity_type, $entity, $field_name)) {
-      foreach ($items as $item) {
-        $tids[] = $item['tid'];
+      foreach ($items as $delta => $item) {
+        $tid = $item['tid'];
+        // Use the lowest delta available if the term is attached multiple
+        // times on the entity.
+        $delta = isset($terms[$tid]) ? min($delta, $terms[$tid]['delta']) : $delta;
+        $terms[$tid] = array(
+          'tid' => $tid,
+          'delta' => $delta,
+        );
       }
     }
   }
 
-  if (!empty($tids)) {
+  if (!empty($terms)) {
     $query = db_insert('taxonomy_entity_index');
-    $query->fields(array('entity_type', 'entity_id', 'revision_id', 'tid'));
+    $query->fields(array('entity_type', 'entity_id', 'revision_id', 'tid', 'delta'));
 
-    foreach ($tids as $tid) {
+    foreach ($terms as $term) {
       $query->values(array(
         'entity_type' => $entity_type,
         'entity_id' => $entity_id,
         'revision_id' => $revision_id,
-        'tid' => $tid,
+        'tid' => $term['tid'],
+        'delta' => $term['delta'],
       ));
     }
 

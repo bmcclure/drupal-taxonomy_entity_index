@@ -33,6 +33,13 @@ function taxonomy_entity_index_schema() {
          'not null' => TRUE,
          'default' => 0,
       ),
+      'delta' => array(
+        'description' => 'The delta order of the term.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'primary key' => array('entity_type', 'entity_id', 'revision_id', 'tid'),
     'foreign keys' => array(
@@ -44,4 +51,17 @@ function taxonomy_entity_index_schema() {
   );
 
   return $schema;
+}
+
+/**
+ * Add the delta column to the {taxonomy_entity_index} table.
+ */
+function taxonomy_entity_index_update_7000() {
+  db_add_field('taxonomy_entity_index', 'delta', array(
+    'description' => 'The delta order of the term.',
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
+  ));
 }
