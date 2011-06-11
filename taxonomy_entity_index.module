@@ -1,0 +1,122 @@
+<?php
+
+/**
+ * Implements hook_entity_delete().
+ */
+function taxonomy_entity_index_entity_delete($entity, $entity_type) {
+  list($entity_id) = entity_extract_ids($entity_type, $entity);
+  db_delete('taxonomy_entity_index')
+    ->condition('entity_type', $entity_type)
+    ->condition('entity_id', $entity_id)
+    ->execute();
+}
+
+/**
+ * Implements hook_field_attach_delete_revision().
+ */
+function taxonomy_entity_index_field_attach_delete_revision($entity_type, $entity) {
+  list($entity_id, $revision_id) = entity_extract_ids($entity_type, $entity);
+  db_delete('taxonomy_entity_index')
+    ->condition('entity_type', $entity_type)
+    ->condition('entity_id', $entity_id)
+    ->condition('revision_id', $vid)
+    ->execute();
+}
+
+/**
+ * Implements hook_taxonomy_term_delete().
+ */
+function taxonomy_entity_index_taxonomy_term_delete($term) {
+  db_delete('taxonomy_entity_index')
+    ->condition('tid', $term->tid)
+    ->execute();
+}
+
+function taxonomy_entity_index_get_taxonomy_field_names($type, $bundle) {
+  $taxonomy_fields = &drupal_static(__FUNCTION__);
+
+  if (!isset($taxonomy_fields)) {
+    if (FALSE && $cache = cache_get('entity-taxonomy-fields')) {
+      $taxonomy_fields = $cache->data;
+    }
+    else {
+      $taxonomy_fields = array();
+      $fields = field_info_fields();
+
+      foreach ($fields as $field) {
+        if ($field['type'] != 'taxonomy_term_reference') {
+          continue;
+        }
+
+        foreach ($field['bundles'] as $entity_type => $bundles) {
+          foreach ($bundles as $entity_bundle) {
+            $taxonomy_fields[$entity_type][$entity_bundle][] = $field['field_name'];
+          }
+        }
+      }
+
+      cache_set('entity-taxonomy-fields', $taxonomy_fields);
+    }
+  }
+
+  return !empty($taxonomy_fields[$type][$bundle]) ? $taxonomy_fields[$type][$bundle] : array();
+}
+
+/**
+ * Implements hook_field_attach_insert().
+ */
+function taxonomy_entity_index_field_attach_insert($entity_type, $entity) {
+  return taxonomy_entity_index_field_attach_update($entity_type, $entity);
+}
+
+/**
+ * Implements hook_field_attach_update().
+ */
+function taxonomy_entity_index_field_attach_update($entity_type, $entity) {
+  $first_call = &drupal_static(__FUNCTION__, array());
+
+  list($entity_id, $revision_id, $bundle) = entity_extract_ids($entity_type, $entity);
+
+  // We don't maintain data for old revisions, so clear all previous values
+  // from the table. Since this hook runs once per field, per object, make
+  // sure we only wipe values once.
+  $cid = "{$entity_type}:{$entity_id}:{$revision_id}";
+  if (!isset($first_call[$cid])) {
+    $first_call[$cid] = FALSE;
+    db_delete('taxonomy_entity_index')
+      ->condition('entity_type', $entity_type)
+      ->condition('entity_id', $entity_id)
+      ->condition('revision_id', $revision_id)
+      ->execute();
+  }
+
+  $taxonomy_fields = taxonomy_entity_index_get_taxonomy_field_names($entity_type, $bundle);
+  if (empty($taxonomy_fields)) {
+    return;
+  }
+
+  $tids = array();
+  foreach ($taxonomy_fields as $field_name) {
+    if ($items = field_get_items($entity_type, $entity, $field_name)) {
+      foreach ($items as $item) {
+        $tids[] = $item['tid'];
+      }
+    }
+  }
+
+  if (!empty($tids)) {
+    $query = db_insert('taxonomy_entity_index');
+    $query->fields(array('entity_type', 'entity_id', 'revision_id', 'tid'));
+
+    foreach ($tids as $tid) {
+      $query->values(array(
+        'entity_type' => $entity_type,
+        'entity_id' => $entity_id,
+        'revision_id' => $revision_id,
+        'tid' => $tid,
+      ));
+    }
+
+    $query->execute();
+  }
+}
