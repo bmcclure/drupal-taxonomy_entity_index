@@ -36,11 +36,11 @@ function taxonomy_entity_index_taxonomy_term_delete($term) {
 /**
  * Return all the taxonomy field names for a given entity type and bundle.
  */
-function taxonomy_entity_index_get_taxonomy_field_names($type, $bundle) {
+function taxonomy_entity_index_get_taxonomy_field_names($type = NULL, $bundle = NULL) {
   $taxonomy_fields = &drupal_static(__FUNCTION__);
 
   if (!isset($taxonomy_fields)) {
-    if (FALSE && $cache = cache_get('entity-taxonomy-fields')) {
+    if ($cache = cache_get('entity-taxonomy-fields')) {
       $taxonomy_fields = $cache->data;
     }
     else {
@@ -63,7 +63,15 @@ function taxonomy_entity_index_get_taxonomy_field_names($type, $bundle) {
     }
   }
 
-  return !empty($taxonomy_fields[$type][$bundle]) ? $taxonomy_fields[$type][$bundle] : array();
+  if (isset($bundle)) {
+    return isset($taxonomy_fields[$type][$bundle]) ? $taxonomy_fields[$type][$bundle] : array();
+  }
+  elseif (isset($type)) {
+    return isset($taxonomy_fields[$type]) ? $taxonomy_fields[$type] : array();
+  }
+  else {
+    return $taxonomy_fields;
+  }
 }
 
 /**
@@ -108,12 +116,9 @@ function taxonomy_entity_index_field_attach_update($entity_type, $entity) {
   foreach ($taxonomy_fields as $field_name) {
     if ($items = field_get_items($entity_type, $entity, $field_name)) {
       foreach ($items as $delta => $item) {
-        $tid = $item['tid'];
-        // Use the lowest delta available if the term is attached multiple
-        // times on the entity.
-        $delta = isset($terms[$tid]) ? min($delta, $terms[$tid]['delta']) : $delta;
-        $terms[$tid] = array(
-          'tid' => $tid,
+        $terms[] = array(
+          'tid' => $item['tid'],
+          'field' => $field_name,
           'delta' => $delta,
         );
       }
@@ -130,10 +135,66 @@ function taxonomy_entity_index_field_attach_update($entity_type, $entity) {
         'entity_id' => $entity_id,
         'revision_id' => $revision_id,
         'tid' => $term['tid'],
+        'field_name' => $term['field_name'], // Not actually used yet
         'delta' => $term['delta'],
       ));
     }
 
     $query->execute();
+  }
+}
+
+/**
+ * Batch callback; re-index all the terms for a given entity type.
+ */
+function taxonomy_entity_index_reindex_entity_type($entity_type, &$context) {
+  if (empty($context['sandbox'])) {
+    $context['sandbox'] = array();
+    $context['sandbox']['progress'] = 0;
+    $context['sandbox']['current_id'] = 0;
+    $context['sandbox']['bundles'] = array_keys(taxonomy_entity_index_get_taxonomy_field_names($entity_type));
+
+    // Clear out any records for this type.
+    db_delete('taxonomy_entity_index')
+      ->condition('entity_type', $entity_type)
+      ->execute();
+
+    // Calculate the maximum number of entities.
+    if (!empty($context['sandbox']['bundles'])) {
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', $entity_type);
+      $query->entityCondition('bundle', $context['sandbox']['bundles'], 'IN');
+      $query->entityCondition('entity_id', 0, '>');
+      $query->count();
+      $context['sandbox']['max'] = (int) $query->execute();
+    }
+    if (empty($context['sandbox']['max'])) {
+      $context['finished'] = TRUE;
+      return;
+    }
+  }
+
+  $limit = 25;
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', $entity_type);
+  $query->entityCondition('bundle', $context['sandbox']['bundles'], 'IN');
+  $query->entityCondition('entity_id', $context['sandbox']['current_id'], '>');
+  $query->entityOrderBy('entity_id', 'ASC');
+  $query->range(0, $limit);
+  $results = $query->execute();
+  $entities = entity_load($entity_type, array_keys($results[$entity_type]));
+
+  foreach ($entities as $id => $entity) {
+    taxonomy_entity_index_field_attach_update($entity_type, $entity);
+    $context['sandbox']['current_id'] = $id;
+    $context['message'] = t('Updating taxonomy entity index data for @type @id.', array('@type' => $entity_type, '@id' => $id));
+  }
+
+  // In case any of the entities fail to load, increase the progress by the
+  // stub entity count.
+  $context['sandbox']['progress'] += count($results[$entity_type]);
+
+  if ($context['sandbox']['progress'] != $context['sandbox']['max']) {
+    $context['finished'] = ($context['sandbox']['progress'] >= $context['sandbox']['max']);
   }
 }
