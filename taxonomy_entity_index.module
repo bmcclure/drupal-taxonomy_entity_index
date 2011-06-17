@@ -1,6 +1,17 @@
 <?php
 
 /**
+ * Implements hook_field_delete_instance().
+ */
+function taxonomy_entity_index_field_delete_instance($instance) {
+  db_delete('taxonomy_entity_index')
+    ->condition('field_name', $instance['field_name'])
+    ->condition('entity_type', $instance['entity_type'])
+    ->condition('bundle', $instance['bundle'])
+    ->execute();
+}
+
+/**
  * Implements hook_entity_delete().
  */
 function taxonomy_entity_index_entity_delete($entity, $entity_type) {
@@ -118,7 +129,7 @@ function taxonomy_entity_index_field_attach_update($entity_type, $entity) {
       foreach ($items as $delta => $item) {
         $terms[] = array(
           'tid' => $item['tid'],
-          'field' => $field_name,
+          'field_name' => $field_name,
           'delta' => $delta,
         );
       }
@@ -127,16 +138,17 @@ function taxonomy_entity_index_field_attach_update($entity_type, $entity) {
 
   if (!empty($terms)) {
     $query = db_insert('taxonomy_entity_index');
-    $query->fields(array('entity_type', 'entity_id', 'revision_id', 'tid', 'delta'));
+    $query->fields(array('entity_type', 'bundle', 'entity_id', 'revision_id', 'field_name', 'delta', 'tid'));
 
     foreach ($terms as $term) {
       $query->values(array(
         'entity_type' => $entity_type,
+        'bundle' => $bundle,
         'entity_id' => $entity_id,
         'revision_id' => $revision_id,
-        'tid' => $term['tid'],
-        'field_name' => $term['field_name'], // Not actually used yet
+        'field_name' => $term['field_name'],
         'delta' => $term['delta'],
+        'tid' => $term['tid'],
       ));
     }
 

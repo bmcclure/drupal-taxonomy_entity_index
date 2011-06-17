@@ -70,7 +70,7 @@ function taxonomy_entity_index_tokens($type, $tokens, array $data = array(), arr
 
 function _taxonomy_entity_index_get_terms_array($entity_type, $entity) {
   list($entity_id, $revision_id) = entity_extract_ids($entity_type, $entity);
-  // @todo How to properly 'order' these by delta?
+  // @todo How to properly 'order' these by field/delta?
   $tids = db_query("SELECT tid FROM {taxonomy_entity_index} WHERE entity_type = :type AND entity_id = :id AND revision_id = :vid ORDER BY delta", array(
     ':type' => $entity_type,
     ':id' => $entity_id,
