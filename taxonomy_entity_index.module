@@ -16,10 +16,11 @@ function taxonomy_entity_index_entity_delete($entity, $entity_type) {
  */
 function taxonomy_entity_index_field_attach_delete_revision($entity_type, $entity) {
   list($entity_id, $revision_id) = entity_extract_ids($entity_type, $entity);
+
   db_delete('taxonomy_entity_index')
     ->condition('entity_type', $entity_type)
     ->condition('entity_id', $entity_id)
-    ->condition('revision_id', $revision_id)
+    ->condition('revision_id', isset($revision_id) ? $revision_id : $entity_id)
     ->execute();
 }
 
@@ -32,6 +33,9 @@ function taxonomy_entity_index_taxonomy_term_delete($term) {
     ->execute();
 }
 
+/**
+ * Return all the taxonomy field names for a given entity type and bundle.
+ */
 function taxonomy_entity_index_get_taxonomy_field_names($type, $bundle) {
   $taxonomy_fields = &drupal_static(__FUNCTION__);
 
@@ -76,6 +80,11 @@ function taxonomy_entity_index_field_attach_update($entity_type, $entity) {
   $first_call = &drupal_static(__FUNCTION__, array());
 
   list($entity_id, $revision_id, $bundle) = entity_extract_ids($entity_type, $entity);
+
+  // The revision ID may be NULL.
+  if (!isset($revision_id)) {
+    $revision_id = $entity_id;
+  }
 
   // We don't maintain data for old revisions, so clear all previous values
   // from the table. Since this hook runs once per field, per object, make

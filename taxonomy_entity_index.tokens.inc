@@ -69,12 +69,12 @@ function taxonomy_entity_index_tokens($type, $tokens, array $data = array(), arr
 }
 
 function _taxonomy_entity_index_get_terms_array($entity_type, $entity) {
-  list($id, $vid) = entity_extract_ids($entity_type, $entity);
+  list($entity_id, $revision_id) = entity_extract_ids($entity_type, $entity);
   // @todo How to properly 'order' these by delta?
   $tids = db_query("SELECT tid FROM {taxonomy_entity_index} WHERE entity_type = :type AND entity_id = :id AND revision_id = :vid ORDER BY delta", array(
     ':type' => $entity_type,
-    ':id' => $id,
-    ':vid' => $vid,
+    ':id' => $entity_id,
+    ':vid' => isset($revision_id) ? $revision_id : $entity_id,
   ))->fetchCol();
   $terms = taxonomy_term_load_multiple($tids);
   foreach ($terms as $tid => $term) {
