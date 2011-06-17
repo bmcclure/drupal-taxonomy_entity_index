@@ -31,7 +31,7 @@ function taxonomy_entity_index_field_attach_delete_revision($entity_type, $entit
   db_delete('taxonomy_entity_index')
     ->condition('entity_type', $entity_type)
     ->condition('entity_id', $entity_id)
-    ->condition('revision_id', isset($revision_id) ? $revision_id : $entity_id)
+    ->condition('revision_id', $revision_id)
     ->execute();
 }
 
