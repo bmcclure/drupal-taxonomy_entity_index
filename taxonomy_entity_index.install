@@ -57,6 +57,7 @@ function taxonomy_entity_index_schema() {
     'primary key' => array('entity_type', 'entity_id', 'revision_id', 'field_name', 'delta'),
     'indexes' => array(
       'field_instance' => array('field_name', 'entity_type', 'bundle'),
+      'tid' => array('tid'),
     ),
     'foreign keys' => array(
       'term' => array(
@@ -125,4 +126,11 @@ function taxonomy_entity_index_update_7002() {
 
   // Add the field_instance index.
   db_add_index('taxonomy_entity_index', 'field_instance', array('field_name', 'entity_type', 'bundle'));
+}
+
+/**
+ * Add an index on tid.
+ */
+function taxonomy_entity_index_update_7003() {
+  db_add_index('taxonomy_entity_index', 'tid', array('tid'));
 }
