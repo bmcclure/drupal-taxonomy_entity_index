@@ -96,8 +96,6 @@ function taxonomy_entity_index_field_attach_insert($entity_type, $entity) {
  * Implements hook_field_attach_update().
  */
 function taxonomy_entity_index_field_attach_update($entity_type, $entity) {
-  $first_call = &drupal_static(__FUNCTION__, array());
-
   list($entity_id, $revision_id, $bundle) = entity_extract_ids($entity_type, $entity);
 
   // The revision ID may be NULL.
@@ -105,18 +103,13 @@ function taxonomy_entity_index_field_attach_update($entity_type, $entity) {
     $revision_id = $entity_id;
   }
 
-  // We don't maintain data for old revisions, so clear all previous values
-  // from the table. Since this hook runs once per field, per object, make
-  // sure we only wipe values once.
-  $cid = "{$entity_type}:{$entity_id}:{$revision_id}";
-  if (!isset($first_call[$cid])) {
-    $first_call[$cid] = FALSE;
-    db_delete('taxonomy_entity_index')
-      ->condition('entity_type', $entity_type)
-      ->condition('entity_id', $entity_id)
-      ->condition('revision_id', $revision_id)
-      ->execute();
-  }
+  // Clear previous taxonomy index for the specific revision ID of the entity
+  // since we want to keep track of previous revisions.
+  db_delete('taxonomy_entity_index')
+    ->condition('entity_type', $entity_type)
+    ->condition('entity_id', $entity_id)
+    ->condition('revision_id', $revision_id)
+    ->execute();
 
   $taxonomy_fields = taxonomy_entity_index_get_taxonomy_field_names($entity_type, $bundle);
   if (empty($taxonomy_fields)) {
