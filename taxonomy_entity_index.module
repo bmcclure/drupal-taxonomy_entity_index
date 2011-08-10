@@ -51,7 +51,7 @@ function taxonomy_entity_index_get_taxonomy_field_names($type = NULL, $bundle = 
   $taxonomy_fields = &drupal_static(__FUNCTION__);
 
   if (!isset($taxonomy_fields)) {
-    if ($cache = cache_get('entity-taxonomy-fields')) {
+    if ($cache = cache_get('entity-taxonomy-fields', 'cache_field')) {
       $taxonomy_fields = $cache->data;
     }
     else {
@@ -70,7 +70,7 @@ function taxonomy_entity_index_get_taxonomy_field_names($type = NULL, $bundle = 
         }
       }
 
-      cache_set('entity-taxonomy-fields', $taxonomy_fields);
+      cache_set('entity-taxonomy-fields', $taxonomy_fields, 'cache_field');
     }
   }
 
