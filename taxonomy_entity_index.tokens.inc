@@ -5,9 +5,10 @@
  * Token integration for the taxonomy_entity_index module.
  */
 
-function taxonomy_entity_index_token_info() {
-  $info = array();
-
+/**
+ * Implements hook_token_info_alter().
+ */
+function taxonomy_entity_index_token_info_alter(&$info) {
   if (!module_exists('token')) {
     // We depend on the token_get_entity_mapping() function in token.module.
     return $info;
@@ -15,34 +16,45 @@ function taxonomy_entity_index_token_info() {
 
   // Add [entity:terms] tokens for all entities.
   $entities = entity_get_info();
-  foreach ($entities as $entity => $entity_info) {
+  foreach ($entities as $entity_type => $entity_info) {
     if (!isset($entity_info['token type'])) {
       continue;
     }
 
-    $tokens = &$info['tokens'][$entity_info['token type']];
-    $tokens['terms'] = array(
-      'name' => t('Terms'),
-      'description' => t('The terms assoicated with the @entity.', array('@entity' => drupal_strtolower($entity_info['label']))),
-      'type' => 'array',
-    );
-  }
+    // Only add to valid token types.
+    $token_type = $entity_info['token type'];
+    if (!isset($info['tokens'][$token_type]) || !isset($info['types'][$token_type])) {
+      continue;
+    }
 
-  return $info;
+    // Do not add token if the entity type has no term fields.
+    $fields = taxonomy_entity_index_get_taxonomy_field_names($entity_type);
+    if (empty($fields)) {
+      continue;
+    }
+
+    if (!isset($info['tokens'][$token_type]['terms'])) {
+      $info['tokens'][$token_type]['terms'] = array(
+        'name' => t('Terms'),
+        'description' => t('The terms assoicated with the @entity.', array('@entity' => drupal_strtolower($entity_info['label']))),
+        'type' => 'array',
+        'module' => 'taxonomy_entity_index',
+      );
+    }
+  }
 }
 
 /**
  * Implements hook_tokens().
  */
 function taxonomy_entity_index_tokens($type, $tokens, array $data = array(), array $options = array()) {
-  $replacements = array();
-
-  $sanitize = !empty($options['sanitize']);
-
-  if (!module_exists('token')) {
+  if (!module_exists('token') || _token_module($type, 'terms') != 'taxonomy_entity_index') {
     // We depend on the token_get_entity_mapping() function in token.module.
-    return $replacements;
+    return array();
   }
+
+  $replacements = array();
+  $sanitize = !empty($options['sanitize']);
 
   // Entity tokens.
   if (!empty($data[$type]) && $entity_type = token_get_entity_mapping('token', $type)) {
