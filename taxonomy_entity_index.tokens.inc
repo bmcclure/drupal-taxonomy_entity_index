@@ -36,7 +36,7 @@ function taxonomy_entity_index_token_info_alter(&$info) {
     if (!isset($info['tokens'][$token_type]['terms'])) {
       $info['tokens'][$token_type]['terms'] = array(
         'name' => t('Terms'),
-        'description' => t('The terms assoicated with the @entity.', array('@entity' => drupal_strtolower($entity_info['label']))),
+        'description' => t('The terms associated with the @entity.', array('@entity' => drupal_strtolower($entity_info['label']))),
         'type' => 'array',
         'module' => 'taxonomy_entity_index',
       );
