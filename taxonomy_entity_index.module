@@ -1,6 +1,22 @@
 <?php
 
 /**
+ * Implements hook_menu().
+ */
+function taxonomy_entity_index_menu() {
+  $items = array();
+  $items['admin/config/system/taxonomy-entity-index'] = array(
+    'title' => 'Taxonomy entity index',
+    'description' => 'Manage the Taxonomy entity index.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('taxonomy_entity_index_admin_form'),
+    'file' => 'taxonomy_entity_index.admin.inc',
+    'access arguments' => array('administer site configuration'),
+  );
+  return $items;
+}
+
+/**
  * Implements hook_field_delete_instance().
  */
 function taxonomy_entity_index_field_delete_instance($instance) {
@@ -201,5 +217,22 @@ function taxonomy_entity_index_reindex_entity_type($entity_type, &$context) {
 
   if ($context['sandbox']['progress'] != $context['sandbox']['max']) {
     $context['finished'] = ($context['sandbox']['progress'] >= $context['sandbox']['max']);
+  }
+}
+
+/**
+ * Batch 'finished' callback.
+ *
+ * @see taxonomy_entity_index_admin_form()
+ * @see taxonomy_entity_index_reindex_entity_type()
+ */
+function taxonomy_entity_index_reindex_finished($success, $results, $operations) {
+  if ($success) {
+    drupal_set_message(t('Taxonomy entity index rebuilt successfully.'));
+  }
+  else {
+    // An error occurred.
+    $error_operation = reset($operations);
+    drupal_set_message(t('An error occurred while processing the operation.'));
   }
 }
