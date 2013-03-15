@@ -183,10 +183,10 @@ function taxonomy_entity_index_reindex_entity_type($entity_type, &$context) {
     // Calculate the maximum number of entities.
     if (!empty($context['sandbox']['bundles'])) {
       $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', $entity_type);
       if (count($context['sandbox']['bundles']) > 1) {
-        $query->entityCondition('entity_type', $entity_type);
-      }
-      $query->entityCondition('bundle', $context['sandbox']['bundles'], 'IN');
+        $query->entityCondition('bundle', $context['sandbox']['bundles'], 'IN');
+      }  
       $query->entityCondition('entity_id', 0, '>');
       $query->count();
       $context['sandbox']['max'] = (int) $query->execute();
