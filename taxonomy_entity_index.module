@@ -184,7 +184,7 @@ function taxonomy_entity_index_reindex_entity_type($entity_type, &$context) {
     if (!empty($context['sandbox']['bundles'])) {
       $query = new EntityFieldQuery();
       $query->entityCondition('entity_type', $entity_type);
-      if (count($context['sandbox']['bundles']) > 1) {
+      if ($entity_type != 'user') {
         $query->entityCondition('bundle', $context['sandbox']['bundles'], 'IN');
       }  
       $query->entityCondition('entity_id', 0, '>');
@@ -200,7 +200,7 @@ function taxonomy_entity_index_reindex_entity_type($entity_type, &$context) {
   $limit = 25;
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', $entity_type);
-  if (count($context['sandbox']['bundles']) > 1) {
+  if ($entity_type != 'user') {
     $query->entityCondition('bundle', $context['sandbox']['bundles'], 'IN');
   }
   $query->entityCondition('entity_id', $context['sandbox']['current_id'], '>');
