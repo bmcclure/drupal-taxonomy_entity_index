@@ -6,8 +6,8 @@
 function taxonomy_entity_index_menu() {
   $items = array();
   $items['admin/config/system/taxonomy-entity-index'] = array(
-    'title' => 'Taxonomy entity index',
-    'description' => 'Manage the Taxonomy entity index.',
+    'title' => 'Taxonomy Entity Index',
+    'description' => 'Manage the Taxonomy Entity Index.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('taxonomy_entity_index_admin_form'),
     'file' => 'taxonomy_entity_index.admin.inc',

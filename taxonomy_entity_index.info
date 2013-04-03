@@ -1,4 +1,4 @@
-name = Taxonomy entity index
+name = Taxonomy Entity Index
 description = Provides an actual entity to term index table for lookups.
 core = 7.x
 dependencies[] = taxonomy
