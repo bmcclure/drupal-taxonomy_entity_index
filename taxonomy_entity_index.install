@@ -30,7 +30,8 @@ function taxonomy_entity_index_schema() {
         'description' => 'The entity revision ID this term is attached to.',
         'type' => 'int',
         'unsigned' => TRUE,
-        'not null' => FALSE,
+        'not null' => TRUE,
+        'default' => 0,
       ),
       'field_name' => array(
         'description' => 'The field name the term is attached to.',
@@ -133,4 +134,23 @@ function taxonomy_entity_index_update_7002() {
  */
 function taxonomy_entity_index_update_7003() {
   db_add_index('taxonomy_entity_index', 'tid', array('tid'));
+}
+
+/**
+ * Change not null and add default value to revision_id field.
+ */
+function taxonomy_entity_index_update_7004() {
+  // Drop the primary key since we are changing one of its fields.
+  db_drop_primary_key('taxonomy_entity_index');
+
+  // Modify the schema of the revision_id field.
+  db_change_field('taxonomy_entity_index', 'revision_id', 'revision_id', array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
+  ));
+
+  // Re-add the primary key.
+  db_add_primary_key('taxonomy_entity_index', array('entity_type', 'entity_id', 'revision_id', 'field_name', 'delta'));
 }
