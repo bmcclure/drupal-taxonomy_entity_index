@@ -58,18 +58,14 @@ function taxonomy_entity_index_views_data_alter(&$data) {
     }
   }
 
-  $data['taxonomy_term_data']['table']['join'] = array(
-    'taxonomy_entity_index' => array(
-      // links directly to taxonomy_term_data via tid
-      'left_field' => 'tid',
-      'field' => 'tid',
-    ),
+  $data['taxonomy_term_data']['table']['join']['taxonomy_entity_index'] = array(
+    // links directly to taxonomy_term_data via tid
+    'left_field' => 'tid',
+    'field' => 'tid',
   );
-  $data['taxonomy_term_hierarchy']['table']['join'] = array(
-    'taxonomy_entity_index' => array(
-      // links directly to taxonomy_term_hierarchy via tid
-      'left_field' => 'tid',
-      'field' => 'tid',
-    ),
+  $data['taxonomy_term_hierarchy']['table']['join']['taxonomy_entity_index'] = array(
+    // links directly to taxonomy_term_hierarchy via tid
+    'left_field' => 'tid',
+    'field' => 'tid',
   );
 }
