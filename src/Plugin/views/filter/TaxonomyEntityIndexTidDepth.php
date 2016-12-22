@@ -1,17 +1,33 @@
 <?php
-/**
- * Define an alias for future additions.
- */
-class taxonomy_entity_index_handler_filter_tid_depth extends views_handler_filter_term_node_tid_depth {
 
-  function init(&$view, &$options) {
-    parent::init($view, $options);
-    $this->base_table_info = views_fetch_data($this->table);
+namespace Drupal\taxonomy_entity_index\Plugin\views\filter;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\taxonomy\Plugin\views\filter\TaxonomyIndexTidDepth;
+use Drupal\views\Plugin\views\display\DisplayPluginBase;
+use Drupal\views\ViewExecutable;
+
+/**
+ * Filter handler for taxonomy terms with depth.
+ *
+ * @ingroup views_filter_handlers
+ *
+ * @ViewsFilter("taxonomy_entity_index_tid_depth")
+ */
+class TaxonomyEntityIndexTidDepth extends TaxonomyIndexTidDepth  {
+  /**
+   * Stores the base table information.
+   */
+  var $base_table_info = NULL;
+
+  function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+    parent::init($view, $display, $options);
+    $this->base_table_info = \Drupal::service('views.views_data')->get($this->table);
   }
 
-  function extra_options_form(&$form, &$form_state) {
-    parent::extra_options_form($form, $form_state);
-    $form['depth']['#description'] = t('The depth will match entities tagged with terms in the hierarchy. For example, if you have the term "fruit" and a child term "apple", with a depth of 1 (or higher) then filtering for the term "fruit" will get entities that are tagged with "apple" as well as "fruit". If negative, the reverse is true; searching for "apple" will also pick up nodes tagged with "fruit" if depth is -1 (or lower).');
+  public function buildExtraOptionsForm(&$form, FormStateInterface $form_state) {
+    parent::buildExtraOptionsForm($form, $form_state);
+
+    $form['depth']['#description'] = $this->t('The depth will match entities tagged with terms in the hierarchy. For example, if you have the term "fruit" and a child term "apple", with a depth of 1 (or higher) then filtering for the term "fruit" will get entities that are tagged with "apple" as well as "fruit". If negative, the reverse is true; searching for "apple" will also pick up nodes tagged with "fruit" if depth is -1 (or lower).');
   }
 
   function query() {
@@ -20,7 +36,7 @@ class taxonomy_entity_index_handler_filter_tid_depth extends views_handler_filte
       return;
     }
     elseif (count($this->value) == 1) {
-      // Somethis $this->value is an array with a single element so convert it.
+      // Sometimes $this->value is an array with a single element so convert it.
       if (is_array($this->value)) {
         $this->value = current($this->value);
       }
@@ -35,15 +51,11 @@ class taxonomy_entity_index_handler_filter_tid_depth extends views_handler_filte
     // See http://drupal.org/node/271833
     // If a relationship is set, we must use the alias it provides.
     if (!empty($this->relationship)) {
-      $this->table_alias = $this->relationship;
+      $this->tableAlias = $this->relationship;
     }
     // If no relationship, then use the alias of the base table.
-    elseif (isset($this->query->table_queue[$this->query->base_table]['alias'])) {
-      $this->table_alias = $this->query->table_queue[$this->query->base_table]['alias'];
-    }
-    // This should never happen, but if it does, we fail quietly.
     else {
-      return;
+      $this->tableAlias = $this->query->ensureTable($this->view->storage->get('base_table'));
     }
 
     // Now build the subqueries.
@@ -73,6 +85,6 @@ class taxonomy_entity_index_handler_filter_tid_depth extends views_handler_filte
     }
 
     $subquery->condition($where);
-    $this->query->add_where(0, "$this->table_alias.$this->real_field", $subquery, 'IN');
+    $this->query->addWhere($this->options['group'], "$this->tableAlias.$this->realField", $subquery, 'IN');
   }
 }

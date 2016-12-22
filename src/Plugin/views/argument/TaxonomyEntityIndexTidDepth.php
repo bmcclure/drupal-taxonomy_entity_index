@@ -1,37 +1,47 @@
 <?php
 
+namespace Drupal\taxonomy_entity_index\Plugin\views\argument;
+
+use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\taxonomy\Plugin\views\argument\IndexTidDepth;
+
 /**
- * @file
- * Handler to filter all entities which has a certain term with depth.
+ * Argument handler for entity taxonomy terms with depth.
+ *
+ * @ingroup views_argument_handlers
+ *
+ * @ViewsArgument("taxonomy_entity_index_tid_depth")
  */
+class TaxonomyEntityIndexTidDepth extends IndexTidDepth {
 
-class taxonomy_entity_index_handler_argument_tid_depth extends views_handler_argument_term_node_tid_depth {
+  /**
+   * @var EntityStorageInterface
+   */
+  protected $termStorage;
 
-  function init(&$view, &$options) {
-    parent::init($view, $options);
-    $this->base_table_info = views_fetch_data($this->table);
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityStorageInterface $termStorage) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $termStorage);
+
+    $this->termStorage = $termStorage;
   }
 
-
-  function query($group_by = FALSE) {
-    $this->ensure_my_table();
+  /**
+   * {@inheritdoc}
+   */
+  public function query($group_by = FALSE) {
+    $this->ensureMyTable();
 
     if (!empty($this->options['break_phrase'])) {
-      $tids = new stdClass();
-      $tids->value = $this->argument;
-      $tids = views_break_phrase($this->argument, $tids);
-      if ($tids->value == array(-1)) {
+      $break = static::breakString($this->argument);
+      if ($break->value === array(-1)) {
         return FALSE;
       }
 
-      if (count($tids->value) > 1) {
-        $operator = 'IN';
-      }
-      else {
-        $operator = '=';
-      }
-
-      $tids = $tids->value;
+      $operator = (count($break->value) > 1) ? 'IN' : '=';
+      $tids = $break->value;
     }
     else {
       $operator = "=";
@@ -40,9 +50,6 @@ class taxonomy_entity_index_handler_argument_tid_depth extends views_handler_arg
     // Now build the subqueries.
     $subquery = db_select('taxonomy_entity_index', 'tn');
     $subquery->addField('tn', 'entity_id');
-    if (isset($this->base_table_info['table']['entity type'])) {
-      $subquery->condition('entity_type', $this->base_table_info['table']['entity type']);
-    }
     $where = db_or()->condition('tn.tid', $tids, $operator);
     $last = "tn";
 
@@ -64,7 +71,7 @@ class taxonomy_entity_index_handler_argument_tid_depth extends views_handler_arg
     }
 
     $subquery->condition($where);
-
-    $this->query->add_where(0, "$this->table_alias.$this->real_field", $subquery, 'IN');
+    $this->query->addWhere(0, "$this->tableAlias.$this->realField", $subquery, 'IN');
   }
+
 }

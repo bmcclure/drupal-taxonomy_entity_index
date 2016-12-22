@@ -9,13 +9,13 @@
  * Implements hook_token_info_alter().
  */
 function taxonomy_entity_index_token_info_alter(&$info) {
-  if (!module_exists('token')) {
+  if (!\Drupal::moduleHandler()->moduleExists('token')) {
     // We depend on the token_get_entity_mapping() function in token.module.
     return $info;
   }
 
   // Add [entity:terms] tokens for all entities.
-  $entities = entity_get_info();
+  $entities = \Drupal::entityManager()->getDefinitions();
   foreach ($entities as $entity_type => $entity_info) {
     if (!isset($entity_info['token type'])) {
       continue;
@@ -36,7 +36,7 @@ function taxonomy_entity_index_token_info_alter(&$info) {
     if (!isset($info['tokens'][$token_type]['terms'])) {
       $info['tokens'][$token_type]['terms'] = array(
         'name' => t('Terms'),
-        'description' => t('The terms associated with the @entity.', array('@entity' => drupal_strtolower($entity_info['label']))),
+        'description' => t('The terms associated with the @entity.', array('@entity' => \Drupal\Component\Utility\Unicode::strtolower($entity_info['label']))),
         'type' => 'array',
         'module' => 'taxonomy_entity_index',
       );
@@ -48,7 +48,7 @@ function taxonomy_entity_index_token_info_alter(&$info) {
  * Implements hook_tokens().
  */
 function taxonomy_entity_index_tokens($type, $tokens, array $data = array(), array $options = array()) {
-  if (!module_exists('token') || _token_module($type, 'terms') != 'taxonomy_entity_index') {
+  if (!\Drupal::moduleHandler()->moduleExists('token') || _token_module($type, 'terms') != 'taxonomy_entity_index') {
     // We depend on the token_get_entity_mapping() function in token.module.
     return array();
   }
@@ -70,9 +70,9 @@ function taxonomy_entity_index_tokens($type, $tokens, array $data = array(), arr
     }
 
     // Chained token relationships.
-    if ($terms_tokens = token_find_with_prefix($tokens, 'terms')) {
+    if ($terms_tokens = \Drupal::token()->findWithPrefix($tokens, 'terms')) {
       if ($terms = _taxonomy_entity_index_get_terms_array($entity_type, $entity)) {
-        $replacements += token_generate('array', $terms_tokens, array('array' => $terms), $options);
+        $replacements += \Drupal::token()->generate('array', $terms_tokens, array('array' => $terms), $options);
       }
     }
   }
@@ -88,7 +88,7 @@ function _taxonomy_entity_index_get_terms_array($entity_type, $entity) {
     ':id' => $entity_id,
     ':vid' => isset($revision_id) ? $revision_id : $entity_id,
   ))->fetchCol();
-  $terms = taxonomy_term_load_multiple($tids);
+  $terms = \Drupal::entityManager()->getStorage('taxonomy_term')->loadMultiple($tids);
   foreach ($terms as $tid => $term) {
     $terms[$tid] = $term->name;
   }

@@ -1,7 +1,0 @@
-name = Taxonomy Entity Index
-description = Provides an actual entity to term index table for lookups.
-core = 7.x
-dependencies[] = taxonomy
-files[] = includes/views/handlers/taxonomy_entity_index_handler_filter_tid_depth.inc
-files[] = includes/views/handlers/taxonomy_entity_index_handler_argument_tid_depth.inc
-files[] = includes/views/handlers/taxonomy_entity_index_handler_field_tid.inc
