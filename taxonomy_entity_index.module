@@ -3,11 +3,11 @@
 /**
  * Implements hook_field_config_delete().
  */
-function taxonomy_entity_index_field_config_delete($instance) {
+function taxonomy_entity_index_field_config_delete(Drupal\field\Entity\FieldConfig $instance) {
   db_delete('taxonomy_entity_index')
-    ->condition('field_name', $instance['field_name'])
-    ->condition('entity_type', $instance['entity_type'])
-    ->condition('bundle', $instance['bundle'])
+    ->condition('field_name', $instance->id())
+    ->condition('entity_type', $instance->getEntityTypeId())
+    ->condition('bundle', $instance->bundle())
     ->execute();
 }
 
@@ -184,7 +184,7 @@ function taxonomy_entity_index_reindex_entity_type($entity_type_id, &$context) {
       $query = \Drupal::entityQuery($entity_type_id);
       if ($entity_type_id !== 'user') {
         $query->condition('type', $context['sandbox']['bundles'], 'IN');
-      }  
+      }
       $query->condition($context['sandbox']['entity_key_id'], 0, '>');
       $query->count();
       $context['sandbox']['max'] = (int) $query->execute();
